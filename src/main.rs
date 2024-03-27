@@ -1,7 +1,7 @@
-use hecto_editor::editor::Editor;
+use hecto_editor::{Editor, TryDefault};
 
 fn main() -> anyhow::Result<()> {
-    let mut editor = Editor::new()?;
+    let mut editor = Editor::try_default()?;
     while editor.tick()? {}
     Ok(())
 }
