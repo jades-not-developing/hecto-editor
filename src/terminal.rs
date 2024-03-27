@@ -4,7 +4,7 @@ use crossterm::cursor::{Hide, MoveTo, MoveToNextLine, Show};
 use crossterm::queue;
 use crossterm::style::Print;
 use crossterm::terminal::{Clear, ClearType};
-use crate::TryDefault;
+use crate::{Position, TryDefault};
 
 pub struct Terminal {
     pub rows: u16,
@@ -60,6 +60,10 @@ impl Terminal {
         )?;
 
         Ok(())
+    }
+
+    pub fn move_to_position(&mut self, position: &Position) -> anyhow::Result<()> {
+        self.move_to(position.x, position.y)
     }
 
     pub fn next_line(&mut self) -> anyhow::Result<()> {

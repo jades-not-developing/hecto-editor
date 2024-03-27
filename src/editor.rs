@@ -1,14 +1,12 @@
-use crate::{Terminal, TryDefault};
+use crate::{Position, Terminal, TryDefault};
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::time::Duration;
-use crossterm::queue;
-use crossterm::style::ResetColor;
-use crossterm::terminal::{Clear, ClearType};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub struct Editor {
     terminal: Terminal,
+    position: Position,
 }
 impl Editor {
     pub fn tick(&mut self) -> anyhow::Result<bool> {
@@ -25,7 +23,13 @@ impl Editor {
                         _ => {},
                     },
 
-                    (KeyEventKind::Press, KeyCode::Char(c), _) => {},
+                    (KeyEventKind::Press, KeyCode::Char(c), _) => match c {
+                        'j' =>  self.position.y = self.position.y.saturating_add(1), // down
+                        'k' =>  self.position.y = self.position.y.saturating_sub(1), // up
+                        'h' =>  {} // left
+                        'l' =>  {} // right
+                        _ => {},
+                    },
                     _ => {}
                 },
                 _ => {}
@@ -40,12 +44,13 @@ impl Editor {
     }
 
     pub fn render(&mut self) -> anyhow::Result<()> {
+        self.terminal.hide_cursor()?;
         self.terminal.clear()?;
         self.terminal.move_to(0, 0)?;
-        self.terminal.hide_cursor()?;
 
         self.render_rows()?;
 
+        self.terminal.move_to_position(&self.position)?;
         self.terminal.show_cursor()?;
         self.terminal.flush()?;
 
@@ -77,6 +82,7 @@ impl TryDefault for Editor {
         crossterm::terminal::enable_raw_mode()?;
         Ok(Self {
             terminal: Terminal::try_default()?,
+            position: Position::default(),
         })
     }
 }
