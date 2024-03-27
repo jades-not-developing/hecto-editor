@@ -1,11 +1,11 @@
-use std::io::{Cursor, Stdout, Write};
 use crate::{Terminal, TryDefault};
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::time::Duration;
-use crossterm::cursor::{DisableBlinking, EnableBlinking, Hide, MoveTo, MoveToNextLine, SetCursorStyle, Show};
 use crossterm::queue;
-use crossterm::style::{Print, ResetColor};
+use crossterm::style::ResetColor;
 use crossterm::terminal::{Clear, ClearType};
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub struct Editor {
     terminal: Terminal,
@@ -40,20 +40,32 @@ impl Editor {
     }
 
     pub fn render(&mut self) -> anyhow::Result<()> {
-        self.terminal.clear();
-        self.terminal.hide_cursor();
+        self.terminal.clear()?;
+        self.terminal.move_to(0, 0)?;
+        self.terminal.hide_cursor()?;
 
         self.render_rows()?;
 
-        self.terminal.show_cursor();
-        self.terminal.flush();
+        self.terminal.show_cursor()?;
+        self.terminal.flush()?;
 
         Ok(())
     }
 
     pub fn render_rows(&mut self) -> anyhow::Result<()> {
-        for _ in 0..self.terminal.rows-1 {
-            self.terminal.print("~\r")?;
+        for row in 0..self.terminal.rows-1 {
+            if row == self.terminal.rows / 3 {
+                let mut welcome_msg = format!("-=- Hecto version {VERSION} -=-");
+                let width = self.terminal.columns as usize;
+                let len = welcome_msg.len();
+                let padding = width.saturating_sub(len) / 2;
+                let spaces = " ".repeat(padding.saturating_sub(1));
+                welcome_msg = format!("~{}{}", spaces, welcome_msg);
+                welcome_msg.truncate(width);
+                self.terminal.print(format!("{}\r", welcome_msg))?;
+            } else {
+                self.terminal.print("~\r")?;
+            }
             self.terminal.next_line()?;
         }
         Ok(())
@@ -71,13 +83,10 @@ impl TryDefault for Editor {
 
 impl Drop for Editor {
     fn drop(&mut self) {
-        let mut stdout = ::std::io::stdout();
-        queue!(
-            stdout,
-            Clear(ClearType::All),
-            MoveTo(0, 0),
-            ResetColor,
-        ).expect("Failed to reset screen");
+        self.terminal.clear().expect("Failed to clear the screen");
+        self.terminal.move_to(0, 0).expect("Failed to reset cursor position");
+        self.terminal.show_cursor().expect("Failed to reset show cursor");
+
         crossterm::terminal::disable_raw_mode().expect("Failed to disable raw mode");
     }
 }

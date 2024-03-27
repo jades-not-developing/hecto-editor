@@ -23,7 +23,14 @@ impl Terminal {
         queue!(
             self.stdout,
             Clear(ClearType::All),
-            MoveTo(0, 0),
+        )?;
+        Ok(())
+    }
+
+    pub fn clear_line(&mut self) -> anyhow::Result<()> {
+        queue!(
+            self.stdout,
+            Clear(ClearType::CurrentLine),
         )?;
         Ok(())
     }
