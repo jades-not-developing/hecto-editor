@@ -1,5 +1,5 @@
 use std::io::{Cursor, Stdout, Write};
-use crate::TryDefault;
+use crate::{Terminal, TryDefault};
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::time::Duration;
 use crossterm::cursor::{DisableBlinking, EnableBlinking, Hide, MoveTo, MoveToNextLine, SetCursorStyle, Show};
@@ -8,8 +8,7 @@ use crossterm::style::{Print, ResetColor};
 use crossterm::terminal::{Clear, ClearType};
 
 pub struct Editor {
-    rows: u16,
-    columns: u16,
+    terminal: Terminal,
 }
 impl Editor {
     pub fn tick(&mut self) -> anyhow::Result<bool> {
@@ -33,43 +32,29 @@ impl Editor {
             }
         }
 
-        let (columns, rows) = crossterm::terminal::size()?;
-        self.columns = columns;
-        self.rows = rows;
+        self.terminal.update()?;
 
         self.render()?;
 
         Ok(true)
     }
 
-    pub fn render(&self) -> anyhow::Result<()> {
-        let mut stdout = ::std::io::stdout();
-        queue!(
-            stdout,
-            Clear(ClearType::All),
-            MoveTo(0, 0),
-            Hide,
-        )?;
+    pub fn render(&mut self) -> anyhow::Result<()> {
+        self.terminal.clear();
+        self.terminal.hide_cursor();
 
-        self.render_rows(&mut stdout)?;
+        self.render_rows()?;
 
-        queue!(
-            stdout,
-            Show,
-        )?;
-
-        stdout.flush()?;
+        self.terminal.show_cursor();
+        self.terminal.flush();
 
         Ok(())
     }
 
-    pub fn render_rows(&self, stdout: &mut Stdout) -> anyhow::Result<()> {
-        for _ in 0..self.rows-1 {
-            queue!(
-                stdout,
-                Print("~\r"),
-                MoveToNextLine(1),
-            )?;
+    pub fn render_rows(&mut self) -> anyhow::Result<()> {
+        for _ in 0..self.terminal.rows-1 {
+            self.terminal.print("~\r")?;
+            self.terminal.next_line()?;
         }
         Ok(())
     }
@@ -78,8 +63,9 @@ impl Editor {
 impl TryDefault for Editor {
     fn try_default() -> anyhow::Result<Self> {
         crossterm::terminal::enable_raw_mode()?;
-        let (columns, rows) = crossterm::terminal::size()?;
-        Ok(Self { rows, columns })
+        Ok(Self {
+            terminal: Terminal::try_default()?,
+        })
     }
 }
 
