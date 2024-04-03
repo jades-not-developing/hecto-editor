@@ -24,8 +24,16 @@ impl Editor {
                     },
 
                     (KeyEventKind::Press, KeyCode::Char(c), _) => match c {
-                        'j' =>  self.position.y = self.position.y.saturating_add(1), // down
-                        'k' =>  self.position.y = self.position.y.saturating_sub(1), // up
+                        'j' =>  {
+                            if self.position.y < self.terminal.rows - 2 {
+                                self.position.y = self.position.y.saturating_add(1);
+                            }
+                        }, // down
+                        'k' =>  {
+                            if self.position.y > 0 {
+                                self.position.y = self.position.y.saturating_sub(1);
+                            }
+                        }, // up
                         'h' =>  {} // left
                         'l' =>  {} // right
                         _ => {},
@@ -45,7 +53,6 @@ impl Editor {
 
     pub fn render(&mut self) -> anyhow::Result<()> {
         self.terminal.hide_cursor()?;
-        self.terminal.clear()?;
         self.terminal.move_to(0, 0)?;
 
         self.render_rows()?;
