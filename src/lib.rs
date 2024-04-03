@@ -10,3 +10,9 @@ pub use traits::*;
 
 pub mod position;
 pub use position::*;
+
+pub mod document;
+pub use document::*;
+
+pub mod row;
+pub use row::*;

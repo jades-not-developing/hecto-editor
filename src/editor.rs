@@ -1,12 +1,13 @@
-use crate::{Position, Terminal, TryDefault};
+use crate::{Document, Position, Row, Terminal, TryDefault};
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::time::Duration;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Editor {
     terminal: Terminal,
     position: Position,
+    document: Document,
 }
 impl Editor {
     pub fn tick(&mut self) -> anyhow::Result<bool> {
@@ -66,21 +67,35 @@ impl Editor {
 
     pub fn render_rows(&mut self) -> anyhow::Result<()> {
         for row in 0..self.terminal.rows-1 {
-            if row == self.terminal.rows / 3 {
-                let mut welcome_msg = format!("-=- Hecto version {VERSION} -=-");
-                let width = self.terminal.columns as usize;
-                let len = welcome_msg.len();
-                let padding = width.saturating_sub(len) / 2;
-                let spaces = " ".repeat(padding.saturating_sub(1));
-                welcome_msg = format!("~{}{}", spaces, welcome_msg);
-                welcome_msg.truncate(width);
-                self.terminal.print(format!("{}\r", welcome_msg))?;
+            if let Some(row) = self.document.row(row as usize) {
+                self.render_row(row)?;
+            } else if row == self.terminal.rows / 3 && self.document.is_empty() {
+                self.render_welcome_message()?;
             } else {
                 self.terminal.print("~\r")?;
             }
             self.terminal.next_line()?;
         }
         Ok(())
+    }
+
+    pub fn render_welcome_message(&mut self) -> anyhow::Result<()> {
+        let mut welcome_msg = format!("-=- Hecto version {VERSION} -=-");
+        let width = self.terminal.columns as usize;
+        let len = welcome_msg.len();
+        let padding = width.saturating_sub(len) / 2;
+        let spaces = " ".repeat(padding.saturating_sub(1));
+        welcome_msg = format!("~{}{}", spaces, welcome_msg);
+        welcome_msg.truncate(width);
+        self.terminal.print(format!("{}\r", welcome_msg))?;
+        Ok(())
+    }
+
+    pub fn render_row(&mut self, row: Row) -> anyhow::Result<()> {
+        let start = 0usize;
+        let end = self.terminal.columns as usize;
+        let row = format!("{:<width$}", row.render(start, end), width = self.terminal.columns as usize);
+        self.terminal.print(row)
     }
 }
 
@@ -90,6 +105,7 @@ impl TryDefault for Editor {
         Ok(Self {
             terminal: Terminal::try_default()?,
             position: Position::default(),
+            document: Document::open("Cargo.toml")?,
         })
     }
 }
@@ -98,7 +114,7 @@ impl Drop for Editor {
     fn drop(&mut self) {
         self.terminal.clear().expect("Failed to clear the screen");
         self.terminal.move_to(0, 0).expect("Failed to reset cursor position");
-        self.terminal.show_cursor().expect("Failed to reset show cursor");
+        self.terminal.show_cursor().expect("Failed to show cursor");
 
         crossterm::terminal::disable_raw_mode().expect("Failed to disable raw mode");
     }
