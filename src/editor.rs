@@ -105,11 +105,18 @@ impl Editor {
 
 impl TryDefault for Editor {
     fn try_default() -> anyhow::Result<Self> {
+        let args: Vec<String> = std::env::args().collect();
+        let document = if args.len() > 1 {
+            let file_name = &args[1];
+            Document::open(file_name)?
+        } else {
+            Document::default()
+        };
         crossterm::terminal::enable_raw_mode()?;
         Ok(Self {
             terminal: Terminal::try_default()?,
             position: Position::default(),
-            document: Document::open("Cargo.toml")?,
+            document,
         })
     }
 }
