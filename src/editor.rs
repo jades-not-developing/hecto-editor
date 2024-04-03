@@ -14,30 +14,30 @@ impl Editor {
         if crossterm::event::poll(Duration::from_millis(100))? {
             match crossterm::event::read()? {
                 Event::Key(KeyEvent {
-                               code,
-                               kind,
-                               modifiers,
-                               ..
-                           }) => match (kind, code, modifiers) {
+                    code,
+                    kind,
+                    modifiers,
+                    ..
+                }) => match (kind, code, modifiers) {
                     (KeyEventKind::Press, KeyCode::Char(c), KeyModifiers::CONTROL) => match c {
                         'q' => return Ok(false),
-                        _ => {},
+                        _ => {}
                     },
 
                     (KeyEventKind::Press, KeyCode::Char(c), _) => match c {
-                        'j' =>  {
+                        'j' => {
                             if self.position.y < self.terminal.rows - 2 {
                                 self.position.y = self.position.y.saturating_add(1);
                             }
-                        }, // down
-                        'k' =>  {
+                        } // down
+                        'k' => {
                             if self.position.y > 0 {
                                 self.position.y = self.position.y.saturating_sub(1);
                             }
-                        }, // up
-                        'h' =>  {} // left
-                        'l' =>  {} // right
-                        _ => {},
+                        } // up
+                        'h' => {} // left
+                        'l' => {} // right
+                        _ => {}
                     },
                     _ => {}
                 },
@@ -66,7 +66,7 @@ impl Editor {
     }
 
     pub fn render_rows(&mut self) -> anyhow::Result<()> {
-        for row in 0..self.terminal.rows-1 {
+        for row in 0..self.terminal.rows - 1 {
             if let Some(row) = self.document.row(row as usize) {
                 self.render_row(row)?;
             } else if row == self.terminal.rows / 3 && self.document.is_empty() {
@@ -94,7 +94,11 @@ impl Editor {
     pub fn render_row(&mut self, row: Row) -> anyhow::Result<()> {
         let start = 0usize;
         let end = self.terminal.columns as usize;
-        let row = format!("{:<width$}", row.render(start, end), width = self.terminal.columns as usize);
+        let row = format!(
+            "{:<width$}",
+            row.render(start, end),
+            width = self.terminal.columns as usize
+        );
         self.terminal.print(row)
     }
 }
@@ -113,7 +117,9 @@ impl TryDefault for Editor {
 impl Drop for Editor {
     fn drop(&mut self) {
         self.terminal.clear().expect("Failed to clear the screen");
-        self.terminal.move_to(0, 0).expect("Failed to reset cursor position");
+        self.terminal
+            .move_to(0, 0)
+            .expect("Failed to reset cursor position");
         self.terminal.show_cursor().expect("Failed to show cursor");
 
         crossterm::terminal::disable_raw_mode().expect("Failed to disable raw mode");

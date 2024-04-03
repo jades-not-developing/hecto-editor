@@ -1,10 +1,10 @@
-use std::fmt::Display;
-use std::io::{Stdout, Write};
+use crate::{Position, TryDefault};
 use crossterm::cursor::{Hide, MoveTo, MoveToNextLine, Show};
 use crossterm::queue;
 use crossterm::style::Print;
 use crossterm::terminal::{Clear, ClearType};
-use crate::{Position, TryDefault};
+use std::fmt::Display;
+use std::io::{Stdout, Write};
 
 pub struct Terminal {
     pub rows: u16,
@@ -20,44 +20,29 @@ impl Terminal {
     }
 
     pub fn clear(&mut self) -> anyhow::Result<()> {
-        queue!(
-            self.stdout,
-            Clear(ClearType::All),
-        )?;
+        queue!(self.stdout, Clear(ClearType::All),)?;
         Ok(())
     }
 
     pub fn clear_line(&mut self) -> anyhow::Result<()> {
-        queue!(
-            self.stdout,
-            Clear(ClearType::CurrentLine),
-        )?;
+        queue!(self.stdout, Clear(ClearType::CurrentLine),)?;
         Ok(())
     }
 
     pub fn hide_cursor(&mut self) -> anyhow::Result<()> {
-        queue!(
-            self.stdout,
-            Hide,
-        )?;
+        queue!(self.stdout, Hide,)?;
 
         Ok(())
     }
 
     pub fn show_cursor(&mut self) -> anyhow::Result<()> {
-        queue!(
-            self.stdout,
-            Show,
-        )?;
+        queue!(self.stdout, Show,)?;
 
         Ok(())
     }
 
     pub fn move_to(&mut self, x: u16, y: u16) -> anyhow::Result<()> {
-        queue!(
-            self.stdout,
-            MoveTo(x, y),
-        )?;
+        queue!(self.stdout, MoveTo(x, y),)?;
 
         Ok(())
     }
@@ -67,19 +52,13 @@ impl Terminal {
     }
 
     pub fn next_line(&mut self) -> anyhow::Result<()> {
-        queue!(
-            self.stdout,
-            MoveToNextLine(1),
-        )?;
+        queue!(self.stdout, MoveToNextLine(1),)?;
 
         Ok(())
     }
 
     pub fn print<T: Display>(&mut self, content: T) -> anyhow::Result<()> {
-        queue!(
-            self.stdout,
-            Print(content),
-        )?;
+        queue!(self.stdout, Print(content),)?;
 
         Ok(())
     }
@@ -93,7 +72,11 @@ impl Terminal {
 impl TryDefault for Terminal {
     fn try_default() -> anyhow::Result<Self> {
         let (columns, rows) = crossterm::terminal::size()?;
-        let mut terminal = Self { columns, rows, stdout: ::std::io::stdout() };
+        let mut terminal = Self {
+            columns,
+            rows,
+            stdout: ::std::io::stdout(),
+        };
         terminal.clear()?;
         Ok(terminal)
     }

@@ -16,7 +16,7 @@ impl Row {
 
 impl<T> From<T> for Row
 where
-    T: Display
+    T: Display,
 {
     fn from(value: T) -> Self {
         Self {
