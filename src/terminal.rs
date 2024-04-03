@@ -93,6 +93,8 @@ impl Terminal {
 impl TryDefault for Terminal {
     fn try_default() -> anyhow::Result<Self> {
         let (columns, rows) = crossterm::terminal::size()?;
-        Ok(Self { columns, rows, stdout: ::std::io::stdout() })
+        let mut terminal = Self { columns, rows, stdout: ::std::io::stdout() };
+        terminal.clear()?;
+        Ok(terminal)
     }
 }
